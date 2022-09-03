@@ -1,4 +1,4 @@
-module github.com/foxieze/tsundoku-api
+module github.com/foxieze/tsundoku-server
 
 go 1.19
 

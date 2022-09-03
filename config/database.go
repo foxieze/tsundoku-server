@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/foxieze/tsundoku-api/entities"
+	"github.com/foxieze/tsundoku-server/entities"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
