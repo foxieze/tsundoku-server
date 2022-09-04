@@ -18,7 +18,7 @@ func createToken(userId int, username string) (string, error) {
 		"username": username,
 	})
 
-	token, err := claims.SignedString("secret")
+	token, err := claims.SignedString([]byte("secret"))
 
 	if err != nil {
 		return "", err
@@ -40,6 +40,39 @@ func LoginUser(username string, password string) (string, error) {
 	if (!passwordCorrect) || (err != nil) {
 		return "", errors.New("invalid password")
 	}
+
+	// Create token
+	token, err := createToken(user.Id, username)
+	if err != nil {
+		return "", err
+	}
+
+	// Return token
+	return token, nil
+}
+
+func RegisterUser(username string, password string) (string, error) {
+	// Check if user exists
+	var user entities.User
+	result := config.Database.Where("username = ?", username).First(&user)
+	if result.RowsAffected != 0 {
+		return "", errors.New("user already exists")
+	}
+
+	// Hash password
+	hash, err := hashPassword(password)
+	if err != nil {
+		return "", err
+	}
+
+	// Create user
+	user = entities.User{
+		Username: username,
+		Password: hash,
+	}
+
+	// Save user
+	config.Database.Create(&user)
 
 	// Create token
 	token, err := createToken(user.Id, username)
@@ -85,4 +118,58 @@ func checkPassword(user entities.User, password string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// Authentication function
+func AuthenticateAgainstId(token string, id int) error {
+	// Parse token
+	parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("invalid token")
+		}
+
+		return []byte("secret"), nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	// Check if token is valid
+	if !parsedToken.Valid {
+		return errors.New("invalid token")
+	}
+
+	// Check if token is for the correct user
+	claims := parsedToken.Claims.(jwt.MapClaims)
+	if int(claims["userId"].(float64)) != id {
+		return errors.New("invalid token")
+	}
+
+	return nil
+}
+
+// Get id from token
+func GetIdFromToken(token string) (int, error) {
+	// Parse token
+	parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, errors.New("invalid token")
+		}
+
+		return []byte("secret"), nil
+	})
+
+	if err != nil {
+		return 0, err
+	}
+
+	// Check if token is valid
+	if !parsedToken.Valid {
+		return 0, errors.New("invalid token")
+	}
+
+	// Check if token is for the correct user
+	claims := parsedToken.Claims.(jwt.MapClaims)
+	return int(claims["userId"].(float64)), nil
 }
