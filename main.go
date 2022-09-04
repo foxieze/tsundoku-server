@@ -18,6 +18,7 @@ func main() {
 
 	// Books
 	app.Get("/books/:id", handlers.GetBooks)
+	app.Get("/books", handlers.GetAllBooks)
 	app.Get("/book/:id", handlers.GetBook)
 	app.Post("/books/:id", handlers.CreateBook)
 

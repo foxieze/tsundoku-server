@@ -86,3 +86,29 @@ func CreateBook(c *fiber.Ctx) error {
 
 	return c.JSON(book)
 }
+
+// get all books for user
+func GetAllBooks(c *fiber.Ctx) error {
+	var books []entities.Book
+
+	// get token from header
+	token := strings.Split(c.Get("Authorization"), " ")[1] // Bearer <token>
+
+	userId, err := services.GetIdFromToken(token)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Invalid credentials",
+		})
+	}
+
+	bookshelves := []entities.Bookshelf{}
+	config.Database.Where("user_id = ?", userId).Find(&bookshelves)
+
+	for _, bookshelf := range bookshelves {
+		var bookshelfBooks []entities.Book
+		config.Database.Where("bookshelf_id = ?", bookshelf.ID).Find(&bookshelfBooks)
+		books = append(books, bookshelfBooks...)
+	}
+
+	return c.JSON(books)
+}
