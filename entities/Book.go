@@ -6,7 +6,7 @@ type Book struct {
 	gorm.Model
 	BookshelfID int
 	Bookshelf   Bookshelf
-	ISBN        string
+	ISBN        int
 	Title       string
 	Author      string
 }

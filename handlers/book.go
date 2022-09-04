@@ -17,7 +17,15 @@ func GetBook(c *fiber.Ctx) error {
 	// get token from header
 	token := strings.Split(c.Get("Authorization"), " ")[1] // Bearer <token>
 
-	err := services.AuthenticateAgainstId(token, book.Bookshelf.UserID)
+	// get bookshelf from id
+	bookshelf := entities.Bookshelf{}
+	config.Database.Find(&bookshelf, book.BookshelfID)
+
+	// get user from id
+	user := entities.User{}
+	config.Database.Find(&user, bookshelf.UserID)
+
+	err := services.AuthenticateAgainstId(token, user.Id)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"message": "Invalid credentials",
@@ -48,4 +56,33 @@ func GetBooks(c *fiber.Ctx) error {
 	config.Database.Where("bookshelf_id = ?", bookshelfId).Find(&books)
 
 	return c.JSON(books)
+}
+
+func CreateBook(c *fiber.Ctx) error {
+	var book entities.Book
+
+	bookshelfId := c.Params("id")
+
+	bookshelf := entities.Bookshelf{}
+	config.Database.Find(&bookshelf, bookshelfId)
+
+	// get token from header
+	token := strings.Split(c.Get("Authorization"), " ")[1] // Bearer <token>
+
+	err := services.AuthenticateAgainstId(token, bookshelf.UserID)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "Invalid credentials",
+		})
+	}
+
+	if err := c.BodyParser(&book); err != nil {
+		return err
+	}
+
+	book.BookshelfID = int(bookshelf.ID)
+
+	config.Database.Create(&book)
+
+	return c.JSON(book)
 }
