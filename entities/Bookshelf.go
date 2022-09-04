@@ -9,4 +9,5 @@ type Bookshelf struct {
 	Name     string
 	Location string
 	Tag      string
+	Books    []Book
 }
